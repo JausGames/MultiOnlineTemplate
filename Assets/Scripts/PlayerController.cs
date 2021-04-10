@@ -7,7 +7,13 @@ public class PlayerController : NetworkBehaviour
 {
     NetworkObject netObj;
     Rigidbody2D body;
-    const float SPEED = 0.5f;
+
+    [SerializeField] float SPEED = 0.5f;
+    [SerializeField] float MAX_SPEED_RETURN = 0.5f;
+    [SerializeField] float MAX_SPEED_TO_DASH = 0.1f;
+    [SerializeField] float RUN_DASH = 1f;
+    [SerializeField] float MAX_SPEED = 3f;
+    [SerializeField] float MAX_ANGLE = 45f;
 
     public NetworkVariableVector2 Velocity = new NetworkVariableVector2(new NetworkVariableSettings
     {
@@ -25,12 +31,16 @@ public class PlayerController : NetworkBehaviour
     {
         var dashForce = 0f;
         //swall dash while slow
-        if (body.velocity.magnitude < 0.1f) { dashForce = 0.8f; }
+        if (body.velocity.magnitude < MAX_SPEED_TO_DASH) dashForce = RUN_DASH;
+
         var angle = Vector2.Angle(Velocity.Value, body.velocity);
         Debug.Log("PlayerController, FixedUpdate : force " + dashForce);
         Debug.Log("PlayerController, FixedUpdate : angle " + angle);
-        //check Acceleration != zero && Acceleration.Speed angle < 67.5
-        if (Velocity.Value != Vector2.zero && (angle < 67.5f || body.velocity.magnitude < 0.3f)) body.velocity += Velocity.Value + Velocity.Value.normalized * dashForce;
+        //check Acceleration != zero && Acceleration.Speed angle < 67.5 
+        if (Velocity.Value != Vector2.zero 
+            && (angle < MAX_ANGLE || body.velocity.magnitude < MAX_SPEED_RETURN)
+            && body.velocity.magnitude < MAX_SPEED) body.velocity += Velocity.Value + Velocity.Value.normalized * dashForce;
+        
         else body.velocity -= 0.3f * body.velocity;
     }
     public void Move(Vector2 direction)
@@ -55,8 +65,8 @@ public class PlayerController : NetworkBehaviour
         Debug.Log("PlayerController, ChangeVelocity : direction " + direction);
         Debug.Log("PlayerController, ChangeVelocity : magnitude " + body.velocity.magnitude);
 
-        //check max speed && check controller dead zone
-        if (body.velocity.magnitude < 0.8f && direction.magnitude > 0.2f) Velocity.Value = direction * SPEED;
+        //check controller dead zone  
+        if (direction.magnitude > 0.2f) Velocity.Value = direction * SPEED;
         else Velocity.Value = Vector2.zero;
     }
 }
